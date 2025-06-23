@@ -23,7 +23,7 @@ To get a local copy up and running, follow these simple steps.
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/your_username/policy_generator.git
+   git clone git@github.com:MutlaqAldhbuiub/PolicyGenerator.git
    ```
 2. Install NPM packages
    ```sh
@@ -55,4 +55,4 @@ If you have a suggestion that would make this better, please fork the repo and c
 
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
