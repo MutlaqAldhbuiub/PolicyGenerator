@@ -7,7 +7,16 @@ import JSZip from "jszip";
 
 // Lexical Core
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { EditorState, LexicalEditor, $getRoot, $insertNodes, $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, $isElementNode, createEditor } from "lexical";
+import {
+  LexicalEditor,
+  $getRoot,
+  $insertNodes,
+  $getSelection,
+  $isRangeSelection,
+  FORMAT_TEXT_COMMAND,
+  $isElementNode,
+  createEditor,
+} from "lexical";
 
 // Lexical Plugins
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
@@ -31,10 +40,7 @@ import {
   INSERT_ORDERED_LIST_COMMAND,
 } from "@lexical/list";
 import { $isHeadingNode, $createHeadingNode } from "@lexical/rich-text";
-import {
-  $getNearestNodeOfType,
-  $findMatchingParent,
-} from "@lexical/utils";
+import { $findMatchingParent } from "@lexical/utils";
 import { $setBlocksType } from "@lexical/selection";
 
 // --- Types and Constants ---
@@ -50,7 +56,7 @@ type ExportScope = "combined" | "separate";
 const editorTheme = {
   ltr: "text-left",
   rtl: "text-right",
-  paragraph: "prose", 
+  paragraph: "prose",
   h1: "text-3xl font-bold mb-4 font-lora",
   h2: "text-2xl font-bold mb-3 font-lora",
   h3: "text-xl font-bold mb-2 font-lora",
@@ -95,11 +101,17 @@ function isValidPolicyKey(key: string): key is keyof typeof templates {
   return key in templates;
 }
 
-const replacer = (text: string, companyInfo: FormData['companyInfo']): string => {
+const replacer = (
+  text: string,
+  companyInfo: FormData["companyInfo"]
+): string => {
   return text
     .replace(/{{COMPANY_NAME}}/g, companyInfo?.companyName || "Your Company")
     .replace(/{{WEBSITE_URL}}/g, companyInfo?.websiteUrl || "yourwebsite.com")
-    .replace(/{{CONTACT_EMAIL}}/g, companyInfo?.contactEmail || "contact@yourwebsite.com")
+    .replace(
+      /{{CONTACT_EMAIL}}/g,
+      companyInfo?.contactEmail || "contact@yourwebsite.com"
+    )
     .replace(/{{ADDRESS}}/g, companyInfo?.address || "Your Company Address")
     .replace(/{{COUNTRY}}/g, companyInfo?.country || "Your Country");
 };
@@ -163,9 +175,13 @@ function ToolbarPlugin() {
               ? anchorNode
               : $findMatchingParent(anchorNode, (e) => {
                   const parent = e.getParent();
-                  return parent !== null && $isElementNode(parent) && !parent.isInline();
+                  return (
+                    parent !== null &&
+                    $isElementNode(parent) &&
+                    !parent.isInline()
+                  );
                 });
-          
+
           if (element) {
             if ($isListNode(element)) {
               const listNode = element as ListNode;
@@ -196,31 +212,111 @@ function ToolbarPlugin() {
       <button
         type="button"
         onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold")}
-        className={`p-2 rounded hover:bg-gray-200 ${isBold ? "bg-slate-200" : ""}`}
+        className={`p-2 rounded hover:bg-gray-200 ${
+          isBold ? "bg-slate-200" : ""
+        }`}
         aria-label="Format Bold"
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"
+          />
+        </svg>
       </button>
       {/* Italic Button */}
       <button
         type="button"
         onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic")}
-        className={`p-2 rounded hover:bg-gray-200 ${isItalic ? "bg-slate-200" : ""}`}
+        className={`p-2 rounded hover:bg-gray-200 ${
+          isItalic ? "bg-slate-200" : ""
+        }`}
         aria-label="Format Italic"
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"
+          />
+        </svg>
       </button>
       <div className="h-5 w-px bg-gray-300 mx-2"></div>
       {/* Heading Buttons */}
-      <button onClick={() => formatHeading("h1")} className={`px-3 py-1 rounded hover:bg-gray-200 text-sm font-bold ${blockType === 'h1' ? "bg-slate-200" : ""}`}>H1</button>
-      <button onClick={() => formatHeading("h2")} className={`px-3 py-1 rounded hover:bg-gray-200 text-sm font-bold ${blockType === 'h2' ? "bg-slate-200" : ""}`}>H2</button>
+      <button
+        onClick={() => formatHeading("h1")}
+        className={`px-3 py-1 rounded hover:bg-gray-200 text-sm font-bold ${
+          blockType === "h1" ? "bg-slate-200" : ""
+        }`}
+      >
+        H1
+      </button>
+      <button
+        onClick={() => formatHeading("h2")}
+        className={`px-3 py-1 rounded hover:bg-gray-200 text-sm font-bold ${
+          blockType === "h2" ? "bg-slate-200" : ""
+        }`}
+      >
+        H2
+      </button>
       <div className="h-5 w-px bg-gray-300 mx-2"></div>
       {/* List Buttons */}
-      <button onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} className={`p-2 rounded hover:bg-gray-200 ${blockType === 'bullet' ? "bg-slate-200" : ""}`}>
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+      <button
+        onClick={() =>
+          editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)
+        }
+        className={`p-2 rounded hover:bg-gray-200 ${
+          blockType === "bullet" ? "bg-slate-200" : ""
+        }`}
+      >
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
       </button>
-      <button onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} className={`p-2 rounded hover:bg-gray-200 ${blockType === 'number' ? "bg-slate-200" : ""}`}>
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+      <button
+        onClick={() =>
+          editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)
+        }
+        className={`p-2 rounded hover:bg-gray-200 ${
+          blockType === "number" ? "bg-slate-200" : ""
+        }`}
+      >
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M4 6h16M4 12h16M4 18h7"
+          />
+        </svg>
       </button>
     </div>
   );
@@ -259,7 +355,10 @@ function LexicalEditorComponent({
         <div className="editor-inner relative">
           <RichTextPlugin
             contentEditable={
-              <ContentEditable className="h-96 overflow-y-auto p-6 bg-white rounded-b-lg prose prose-lg max-w-none focus:outline-none editor-input" style={{ fontFamily: "'Lora', serif" }}/>
+              <ContentEditable
+                className="h-96 overflow-y-auto p-6 bg-white rounded-b-lg prose prose-lg max-w-none focus:outline-none editor-input"
+                style={{ fontFamily: "'Lora', serif" }}
+              />
             }
             placeholder={
               <div className="absolute top-6 left-6 text-gray-400 pointer-events-none italic">
@@ -296,19 +395,25 @@ export default function Step4Review({ prevStep, formData }: Props) {
       const zip = new JSZip();
       // This is a complex task. For now, we generate separate files from the original templates, not the edited content.
       // A more robust solution would parse the edited HTML.
-      formData.policies.forEach(policyKey => {
+      formData.policies.forEach((policyKey) => {
         if (isValidPolicyKey(policyKey)) {
           const html = generateSinglePolicyHtml(policyKey, formData);
           const tempEditor = createEditor(editorConfig);
-          const text = tempEditor.parseEditorState(tempEditor.getEditorState().read(() => {
-            const parser = new DOMParser();
-            const dom = parser.parseFromString(html, "text/html");
-            const nodes = $generateNodesFromDOM(tempEditor, dom);
-            $getRoot().clear().append(...nodes);
-            return $getRoot().getTextContent();
-          })).read(() => $getRoot().getTextContent());
+          const text = tempEditor
+            .parseEditorState(
+              tempEditor.getEditorState().read(() => {
+                const parser = new DOMParser();
+                const dom = parser.parseFromString(html, "text/html");
+                const nodes = $generateNodesFromDOM(tempEditor, dom);
+                $getRoot()
+                  .clear()
+                  .append(...nodes);
+                return $getRoot().getTextContent();
+              })
+            )
+            .read(() => $getRoot().getTextContent());
 
-          const content = exportFormat === 'html' ? html : text;
+          const content = exportFormat === "html" ? html : text;
           zip.file(`${policyKey}.${exportFormat}`, content);
         }
       });
@@ -321,8 +426,8 @@ export default function Step4Review({ prevStep, formData }: Props) {
         a.click();
         URL.revokeObjectURL(url);
       });
-
-    } else { // Combined download
+    } else {
+      // Combined download
       let content: string = "";
       if (exportFormat === "html") {
         content = await new Promise((resolve) => {
@@ -330,10 +435,13 @@ export default function Step4Review({ prevStep, formData }: Props) {
             resolve($generateHtmlFromNodes(editor, null));
           });
         });
-      } else { // txt format
-        content = editor.getEditorState().read(() => $getRoot().getTextContent());
+      } else {
+        // txt format
+        content = editor
+          .getEditorState()
+          .read(() => $getRoot().getTextContent());
       }
-      
+
       const blob = new Blob([content], { type: `text/${exportFormat}` });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -346,10 +454,13 @@ export default function Step4Review({ prevStep, formData }: Props) {
 
   return (
     <div>
-      <h2 className="text-3xl font-bold text-gray-800 mb-6" style={{ fontFamily: "'Lora', serif" }}>
+      <h2
+        className="text-3xl font-bold text-gray-800 mb-6"
+        style={{ fontFamily: "'Lora', serif" }}
+      >
         Step 6: Review, Edit, and Download Your Policies
       </h2>
-      
+
       <div className="mb-8">
         <LexicalEditorComponent
           initialHtml={initialHtmlContent}
@@ -358,11 +469,18 @@ export default function Step4Review({ prevStep, formData }: Props) {
       </div>
 
       <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-xl font-bold text-gray-800 mb-4" style={{ fontFamily: "'Lora', serif" }}>Download Options</h3>
+        <h3
+          className="text-xl font-bold text-gray-800 mb-4"
+          style={{ fontFamily: "'Lora', serif" }}
+        >
+          Download Options
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Export Scope */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Scope</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Scope
+            </label>
             <select
               value={exportScope}
               onChange={(e) => setExportScope(e.target.value as ExportScope)}
@@ -374,11 +492,13 @@ export default function Step4Review({ prevStep, formData }: Props) {
           </div>
           {/* Export Format */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Format
+            </label>
             <select
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
-               className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
             >
               <option value="txt">Plain Text (.txt)</option>
               <option value="html">HTML (.html)</option>
@@ -386,7 +506,6 @@ export default function Step4Review({ prevStep, formData }: Props) {
           </div>
         </div>
       </div>
-
 
       <div className="mt-8 flex justify-between items-center">
         <button
@@ -400,10 +519,22 @@ export default function Step4Review({ prevStep, formData }: Props) {
           disabled={!editor}
           className="bg-slate-800 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
           Download
         </button>
       </div>
     </div>
   );
-} 
+}
