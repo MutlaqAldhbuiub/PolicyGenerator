@@ -16,11 +16,14 @@
     "@lexical/plain-text": "^0.32.1",
     "@lexical/react": "^0.32.1",
     "@types/jszip": "^3.4.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
     "jszip": "^3.10.1",
     "lexical": "^0.32.1",
     "next": "15.3.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "turndown": "^7.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

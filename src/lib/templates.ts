@@ -121,4 +121,46 @@ This document is for {{COMPANY_NAME}}.`,
     ],
   },
   // Other policies like 'return', etc., will be added here.
+  aup: {
+    name: "Acceptable Use Policy",
+    base: `This Acceptable Use Policy ("AUP") details the acceptable use of {{COMPANY_NAME}}'s Service. By using our Service, you agree to this AUP.`,
+    clauses: [
+      {
+        id: "prohibited-activities",
+        label: "Do you want to include a clause on prohibited activities?",
+        text: "You are prohibited from using the Service to engage in illegal activities, transmit spam, or harass other users.",
+      },
+      {
+        id: "content-standards",
+        label: "Do you want to add content standards for user-posted content?",
+        text: "Content posted by users must not be obscene, defamatory, or infringing on intellectual property rights. We reserve the right to remove any content that violates these standards.",
+      },
+      {
+        id: "enforcement",
+        label: "Do you want a clause on policy enforcement?",
+        text: "Violation of this AUP may result in a warning, suspension, or termination of your account, at our sole discretion.",
+      },
+    ],
+  },
+  dmca: {
+    name: "DMCA Takedown Policy",
+    base: `{{COMPANY_NAME}} responds to copyright infringement claims in accordance with the Digital Millennium Copyright Act (DMCA).`,
+    clauses: [
+      {
+        id: "reporting-infringement",
+        label: "Include instructions for reporting copyright infringement?",
+        text: "To report a copyright infringement, please send a DMCA notice to our designated agent at {{CONTACT_EMAIL}} with all required information.",
+      },
+      {
+        id: "counter-notification",
+        label: "Include instructions for filing a counter-notification?",
+        text: "If your content was removed due to a mistake or misidentification, you may file a counter-notification by providing a detailed explanation to our designated agent.",
+      },
+      {
+        id: "repeat-infringers",
+        label: "Do you want a policy for repeat infringers?",
+        text: "We will terminate the accounts of users who are determined to be repeat infringers of copyright.",
+      },
+    ],
+  },
 }; 

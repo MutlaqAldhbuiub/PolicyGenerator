@@ -2,8 +2,11 @@
 
 import { FormData } from "@/types";
 import { templates } from "@/lib/templates";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import JSZip from "jszip";
+import jsPDF from "jspdf";
+import TurndownService from "turndown";
+import html2canvas from "html2canvas";
 
 // Lexical Core
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
@@ -16,6 +19,7 @@ import {
   FORMAT_TEXT_COMMAND,
   $isElementNode,
   createEditor,
+  EditorState,
 } from "lexical";
 
 // Lexical Plugins
@@ -50,7 +54,7 @@ type Props = {
   formData: FormData;
 };
 
-type ExportFormat = "txt" | "html";
+type ExportFormat = "txt" | "html" | "pdf" | "md";
 type ExportScope = "combined" | "separate";
 
 const editorTheme = {
@@ -346,35 +350,36 @@ function LexicalEditorComponent({
   onChange,
 }: {
   initialHtml: string;
-  onChange: (editor: LexicalEditor) => void;
+  onChange: (editorState: EditorState, editor: LexicalEditor) => void;
 }) {
+  const editorRef = useRef<HTMLDivElement>(null);
+
   return (
     <LexicalComposer initialConfig={editorConfig}>
-      <div className="relative border border-gray-200 rounded-lg shadow-sm">
+      <div
+        className="relative prose lg:prose-xl max-w-none"
+        ref={editorRef}
+        id="editor-container"
+      >
         <ToolbarPlugin />
-        <div className="editor-inner relative">
-          <RichTextPlugin
-            contentEditable={
-              <ContentEditable
-                className="h-96 overflow-y-auto p-6 bg-white rounded-b-lg prose prose-lg max-w-none focus:outline-none editor-input"
-                style={{ fontFamily: "'Lora', serif" }}
-              />
-            }
-            placeholder={
-              <div className="absolute top-6 left-6 text-gray-400 pointer-events-none italic">
-                You can make edits to the generated policy here...
-              </div>
-            }
-            ErrorBoundary={LexicalErrorBoundary}
-          />
-        </div>
+        <RichTextPlugin
+          contentEditable={
+            <ContentEditable className="p-4 bg-white border border-gray-300 rounded-b-md min-h-[500px] focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          }
+          placeholder={
+            <div className="absolute top-14 left-4 text-gray-400">
+              Your generated policy will appear here...
+            </div>
+          }
+          ErrorBoundary={LexicalErrorBoundary}
+        />
         <HistoryPlugin />
-        <InitialHtmlPlugin initialHtml={initialHtml} />
         <OnChangePlugin
           onChange={(editorState, editor) => {
-            onChange(editor);
+            onChange(editorState, editor);
           }}
         />
+        <InitialHtmlPlugin initialHtml={initialHtml} />
       </div>
     </LexicalComposer>
   );
@@ -382,156 +387,159 @@ function LexicalEditorComponent({
 
 // The main review step component
 export default function Step4Review({ prevStep, formData }: Props) {
-  const [editor, setEditor] = useState<LexicalEditor | null>(null);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>("txt");
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("html");
   const [exportScope, setExportScope] = useState<ExportScope>("combined");
+  const [editor, setEditor] = useState<LexicalEditor | null>(null);
+  const [generatedHtml, setGeneratedHtml] = useState("");
 
-  const initialHtmlContent = generateCombinedPolicyHtml(formData);
+  useEffect(() => {
+    setGeneratedHtml(generateCombinedPolicyHtml(formData));
+  }, [formData]);
 
   const handleDownload = async () => {
     if (!editor) return;
 
     if (exportScope === "separate") {
       const zip = new JSZip();
-      // This is a complex task. For now, we generate separate files from the original templates, not the edited content.
-      // A more robust solution would parse the edited HTML.
-      formData.policies.forEach((policyKey) => {
-        if (isValidPolicyKey(policyKey)) {
-          const html = generateSinglePolicyHtml(policyKey, formData);
-          const tempEditor = createEditor(editorConfig);
-          const text = tempEditor
-            .parseEditorState(
-              tempEditor.getEditorState().read(() => {
-                const parser = new DOMParser();
-                const dom = parser.parseFromString(html, "text/html");
-                const nodes = $generateNodesFromDOM(tempEditor, dom);
-                $getRoot()
-                  .clear()
-                  .append(...nodes);
-                return $getRoot().getTextContent();
-              })
-            )
-            .read(() => $getRoot().getTextContent());
+      for (const policyKey of formData.policies) {
+        const singleHtml = generateSinglePolicyHtml(policyKey, formData);
+        let fileContent: string | Blob = "";
+        let fileExtension = exportFormat;
 
-          const content = exportFormat === "html" ? html : text;
-          zip.file(`${policyKey}.${exportFormat}`, content);
+        if (exportFormat === "html" || exportFormat === "txt") {
+          fileContent = singleHtml;
+        } else if (exportFormat === "md") {
+          const turndownService = new TurndownService();
+          fileContent = turndownService.turndown(singleHtml);
         }
-      });
+        // PDF for separate files is more complex and might require a different approach.
+        // For now, we will just create a simple text file for pdf format in separate download.
+        else if (exportFormat === "pdf") {
+          fileContent = `PDF export for separate policies is not fully supported yet. Content:\n\n${singleHtml}`;
+          fileExtension = "txt"; // save as txt for now
+        }
 
-      zip.generateAsync({ type: "blob" }).then((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "policies.zip";
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-    } else {
-      // Combined download
-      let content: string = "";
-      if (exportFormat === "html") {
-        content = await new Promise((resolve) => {
-          editor.update(() => {
-            resolve($generateHtmlFromNodes(editor, null));
-          });
-        });
-      } else {
-        // txt format
-        content = editor
-          .getEditorState()
-          .read(() => $getRoot().getTextContent());
+        zip.file(`${policyKey}.${fileExtension}`, fileContent);
+      }
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(zipBlob);
+      link.download = "policies.zip";
+      link.click();
+      URL.revokeObjectURL(link.href);
+      return;
+    }
+
+    // Combined download logic
+    editor.getEditorState().read(async () => {
+      const html = $generateHtmlFromNodes(editor, null);
+      let blob: Blob;
+      let filename: string;
+
+      switch (exportFormat) {
+        case "pdf": {
+          const editorContainer = document.getElementById("editor-container");
+          if (editorContainer) {
+            const canvas = await html2canvas(editorContainer);
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+            blob = pdf.output("blob");
+            filename = "policy.pdf";
+          } else {
+            console.error("Editor container not found for PDF export.");
+            return;
+          }
+          break;
+        }
+        case "md": {
+          const turndownService = new TurndownService();
+          const markdown = turndownService.turndown(html);
+          blob = new Blob([markdown], { type: "text/markdown" });
+          filename = "policy.md";
+          break;
+        }
+        case "txt":
+          blob = new Blob([new DOMParser().parseFromString(html, 'text/html').body.textContent || ''], { type: "text/plain" });
+          filename = "policy.txt";
+          break;
+        case "html":
+        default:
+          blob = new Blob([html], { type: "text/html" });
+          filename = "policy.html";
+          break;
       }
 
-      const blob = new Blob([content], { type: `text/${exportFormat}` });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `policy.${exportFormat}`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
   };
 
   return (
     <div>
-      <h2
-        className="text-3xl font-bold text-gray-800 mb-6"
-        style={{ fontFamily: "'Lora', serif" }}
-      >
-        Step 6: Review, Edit, and Download Your Policies
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+        Review & Download Your Policies
       </h2>
-
-      <div className="mb-8">
-        <LexicalEditorComponent
-          initialHtml={initialHtmlContent}
-          onChange={setEditor}
-        />
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+        <p className="text-sm text-blue-700">
+          <span className="font-bold">Note:</span> You can now edit the
+          generated policy directly in the editor below before downloading.
+        </p>
       </div>
 
-      <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-        <h3
-          className="text-xl font-bold text-gray-800 mb-4"
-          style={{ fontFamily: "'Lora', serif" }}
-        >
-          Download Options
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Export Scope */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Scope
-            </label>
-            <select
-              value={exportScope}
-              onChange={(e) => setExportScope(e.target.value as ExportScope)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
-            >
-              <option value="combined">Combined File</option>
-              <option value="separate">Separate Files (.zip)</option>
-            </select>
-          </div>
-          {/* Export Format */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Format
-            </label>
-            <select
-              value={exportFormat}
-              onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
-            >
-              <option value="txt">Plain Text (.txt)</option>
-              <option value="html">HTML (.html)</option>
-            </select>
-          </div>
+      <div className="mb-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Export Format
+          </label>
+          <select
+            value={exportFormat}
+            onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
+            className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="html">HTML</option>
+            <option value="txt">Text</option>
+            <option value="pdf">PDF</option>
+            <option value="md">Markdown</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Export Scope
+          </label>
+          <select
+            value={exportScope}
+            onChange={(e) => setExportScope(e.target.value as ExportScope)}
+            className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="combined">Combined in one file</option>
+            <option value="separate">Separate files (in a ZIP)</option>
+          </select>
         </div>
       </div>
 
-      <div className="mt-8 flex justify-between items-center">
+      <LexicalEditorComponent
+        initialHtml={generatedHtml}
+        onChange={(editorState, editor) => setEditor(editor)}
+      />
+
+      <div className="mt-8 flex justify-between">
         <button
           onClick={prevStep}
           className="text-slate-600 font-bold py-3 px-6 rounded-lg hover:bg-slate-100 transition-colors"
         >
-          Back
+          Previous
         </button>
         <button
+          type="button"
           onClick={handleDownload}
-          disabled={!editor}
-          className="bg-slate-800 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          className="px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
-          </svg>
           Download
         </button>
       </div>
