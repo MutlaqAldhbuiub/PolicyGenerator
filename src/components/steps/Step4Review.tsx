@@ -18,7 +18,6 @@ import {
   $isRangeSelection,
   FORMAT_TEXT_COMMAND,
   $isElementNode,
-  createEditor,
   EditorState,
 } from "lexical";
 
