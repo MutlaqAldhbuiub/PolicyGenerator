@@ -44,6 +44,9 @@ export const metadata: Metadata = {
     creator: "@55i5",
     images: ["/og-image.png"],
   },
+  other: {
+    "google-adsense-account": "ca-pub-1837298232276461",
+  },
 };
 
 export default function RootLayout({
